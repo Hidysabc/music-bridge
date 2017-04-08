@@ -11,4 +11,7 @@ RUN pip install keras pandas h5py && \
     pip install boto3 && \
     rm -rf /root/.cache/pip/*
 
+RUN cd / && git clone https://github.com/Hidysabc/music-bridge.git && \
+    cd music-bridge && pip install .
+
 

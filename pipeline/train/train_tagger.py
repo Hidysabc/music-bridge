@@ -18,7 +18,7 @@ model_name = "music-bridge-tagger"
 s3bucket = "tagatune"
 input_meta_filename = "metadata.csv"
 #input_tmp_dir = "/workspace/music-bridge/data/tagatune"
-input_tmp_dir = '/music-bridge-tmp'
+input_tmp_dir = '/tmp/data'
 if not os.path.exists(input_tmp_dir):
     os.makedirs(input_tmp_dir)
 
@@ -34,30 +34,8 @@ logging.basicConfig(format=FORMAT)
 LOG = logging.getLogger(model_name)
 LOG.setLevel(logging.DEBUG)
 
-s3 = boto3.resource("s3")
-bucket = s3.Bucket(s3bucket)
-
-LOG.info("obtain files from s3")
-all_keys = [obj.key for obj in bucket.objects.all()]
-all_keys = [i for i in all_keys if "npy/" in i and i != "npy/"]
-filenames = [filename.split('/')[-1] for filename in all_keys]
-
-s3_csv_path = "s3://{}/{}".format(s3bucket, input_meta_filename)
-s3_client = boto3.client('s3')
-
-"""
-LOG.info("download data from s3")
-
-if not os.path.exists(os.path.join(input_tmp_dir, input_meta_filename)):
-    s3_client.download_file(s3bucket, input_meta_filename,
-                            os.path.join(input_tmp_dir, input_meta_filename))
-
-if not os.path.exists(os.path.join(input_tmp_dir, "npy")):
-    os.makedirs(os.path.join(input_tmp_dir, "npy"))
-    _ = [s3_client.download_file(s3bucket, os.path.join("npy", filename),
-                                 os.path.join(input_tmp_dir, "npy", filename))
-         for filename in filenames[:50]]
-"""
+s3bucket = "tagatune"
+s3_client = boto3.client("s3")
 
 def generate_data_from_directory(files, meta, batch_size, input_dir):
     tmp = meta[meta.filename.isin(files)].iloc[:, :-1].copy()
@@ -78,13 +56,12 @@ if len(sys.argv)>1:
     model_path = sys.argv[1]
     local_model_path = os.path.join(input_tmp_dir,
                                     os.path.basename(model_path))
-    #s3_client.download_file(s3bucket, sys.argv[1], local_model_path)
+    s3_client.download_file(s3bucket, sys.argv[1], local_model_path)
     model = load_model(local_model_path)
 else:
     LOG.info("Start building model...")
     model = MusicBridgeTagger.build(input_shape = (music_length, 1),
                                     num_outputs = output_features)
-
 
 
 meta = pd.read_csv(os.path.join(input_tmp_dir, input_meta_filename))
