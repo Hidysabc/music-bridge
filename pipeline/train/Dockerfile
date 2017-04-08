@@ -16,6 +16,6 @@ RUN pip install keras pandas h5py && \
     rm -rf /root/.cache/pip/*
 
 RUN cd / && git clone https://github.com/Hidysabc/music-bridge.git && \
-    cd music-bridge && pip install .
+    cd music-bridge/python && pip install .
 
 
