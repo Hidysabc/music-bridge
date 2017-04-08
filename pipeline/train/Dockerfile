@@ -3,7 +3,7 @@
 # Docker file to build container with Keras and MusicTaggerCRNN
 #
 
-FROM tensorflow/tensorflow-gpu:latest
+FROM tensorflow/tensorflow:latest-gpu
 
 MAINTAINER Wei-Yi Cheng
 
