@@ -25,7 +25,7 @@ if not os.path.exists(input_tmp_dir):
 batch_size = 8
 music_length = 642185
 output_features = 188
-epochs = 3
+epochs = 500
 
 
 FORMAT = '%(asctime)-15s %(name)-8s %(levelname)s %(message)s'
