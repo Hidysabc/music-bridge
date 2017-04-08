@@ -1,0 +1,14 @@
+#####
+#
+# Docker file to build container with Keras and MusicTaggerCRNN
+#
+
+FROM tensorflow/tensorflow:latest
+
+MAINTAINER Wei-Yi Cheng
+
+RUN pip install keras pandas h5py && \
+    pip install boto3 && \
+    rm -rf /root/.cache/pip/*
+
+
