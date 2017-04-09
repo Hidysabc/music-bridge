@@ -2,7 +2,6 @@ from __future__ import print_function
 from __future__ import division
 
 import boto3
-from keras.models import load_model
 from keras.optimizers import Adam
 from keras.callbacks import ReduceLROnPlateau
 import logging
@@ -26,7 +25,7 @@ if not os.path.exists(input_tmp_dir):
 batch_size = 8
 music_length = 642185
 output_features = 188
-epochs = 500
+epochs = 1000
 
 
 FORMAT = '%(asctime)-15s %(name)-8s %(levelname)s %(message)s'
@@ -58,11 +57,13 @@ if len(sys.argv)>1:
     local_model_path = os.path.join(input_tmp_dir,
                                     os.path.basename(model_path))
     s3_client.download_file(s3bucket, sys.argv[1], local_model_path)
-    model = load_model(local_model_path)
+    model = MusicBridgeTagger.build(input_shape=(music_length, 1), include_top=True,
+                                    num_outputs=output_features)
+    model.load_weights(local_model_path)
 else:
     LOG.info("Start building model...")
-    model = MusicBridgeTagger.build(input_shape = (music_length, 1),
-                                    num_outputs = output_features)
+    model = MusicBridgeTagger.build(input_shape=(music_length, 1), include_top=True,
+                                    num_outputs=output_features)
 
 
 meta = pd.read_csv(os.path.join(input_tmp_dir, input_meta_filename))
