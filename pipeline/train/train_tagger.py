@@ -4,6 +4,7 @@ from __future__ import division
 import boto3
 from keras.models import load_model
 from keras.optimizers import Adam
+from keras.callbacks import ReduceLROnPlateau
 import logging
 import numpy as np
 import os
@@ -85,11 +86,14 @@ model.compile(loss="binary_crossentropy",
               optimizer=Adam(),
               metrics=["accuracy"])
 
-checkpointer = ModelCheckpointS3(monitor='val_loss',
+checkpointer = ModelCheckpointS3(monitor="val_loss",
                                  filepath="/tmp/{}-best.weights.hdf5".format(model_name),
                                  bucket = s3bucket,
                                  verbose=0, save_best_only=True,
                                  save_weights_only=True)
+
+reduce_lr = ReduceLROnPlateau(monitor="val_loss", factor=0.5,
+                              patience=5, min_lr=1e-5)
 
 LOG.info("start training")
 train_steps = max(1, int(len(train_files) / float(batch_size) + 0.5))
@@ -100,7 +104,7 @@ history = model.fit_generator(train_gen,
                               verbose = 1,
                               validation_data = valid_gen,
                               validation_steps = valid_steps,
-                              callbacks= [checkpointer])
+                              callbacks= [checkpointer, reduce_lr])
 
 val_loss = history.history["val_loss"]
 val_acc = history.history["val_acc"]
