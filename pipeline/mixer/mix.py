@@ -24,7 +24,6 @@ from __future__ import print_function
 import librosa
 import numpy as np
 from scipy.optimize import fmin_l_bfgs_b
-import time
 import argparse
 import boto3
 import os
@@ -60,10 +59,10 @@ parser.add_argument('--tv_weight', type=float, default=1.0, required=False,
                     help='Total Variation weight.')
 
 args = parser.parse_args()
-model_weights_path = args.model_path
+model_weights_path = args.model_weights_path
 base_music_path = args.base_music_path
 style_reference_music_path = args.style_reference_music_path
-result_prefix = args.result_prefix
+result_prefix = args.prefix
 iterations = args.iter
 
 # these are the weights of the different loss components
@@ -253,24 +252,21 @@ evaluator = Evaluator()
 x = np.random.uniform(0, 2, (music_length, 1)) - 1.
 
 for i in range(iterations):
-    LOG.info('Start of iteration', i)
-    start_time = time.time()
+    LOG.info('Start of iteration {}'.format(i))
     x, min_val, info = fmin_l_bfgs_b(evaluator.loss, x.flatten(),
                                      fprime=evaluator.grads, maxfun=20)
     LOG.info('Current loss value: {}'.format(min_val))
     # save current generated image
-    if i % 100 == 0:
+    if i % 100 == 99:
         music_arr = deprocess_music(x.copy())
-        fname = result_prefix + '_at_iteration_%d.wav' % i
+        fname = result_prefix + '_at_iteration_%d.wav' % (i+1)
         out_path = os.path.join(input_tmp_dir, fname)
         maxv = np.iinfo(np.int16).max
         librosa.output.write_wav(out_path, (music_arr*maxv).astype(np.int16),
                                  sr=22050)
-        #s3_client.upload_file(out_path, s3bucket, fname)
+        s3_client.upload_file(out_path, s3bucket, fname)
         LOG.info('Mixed music uploaded to s3://{}/{}'.format(s3bucket, fname))
 
-    end_time = time.time()
-    LOG.info('Iteration %d completed in %ds' % (i, end_time - start_time))
 
 music_arr = deprocess_music(x.copy())
 fname = result_prefix + '_at_iteration_%d.wav' % iterations
