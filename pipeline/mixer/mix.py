@@ -2,11 +2,12 @@
 
 Run the script with:
 ```
-python mix.py path_to_base_mp3.mp3 path_to_reference.mp3 prefix_for_results
+python mix.py path_to_base_mp3.mp3 path_to_reference.mp3
 ```
 
 Optional parameters:
 ```
+--prefix, prefix of the mixed music file name
 --iter, To specify the number of iterations the style transfer takes place (Default is 10)
 --content_weight, The weight given to the content loss (Default is 0.025)
 --style_weight, The weight given to the style loss (Default is 1.0)
@@ -41,13 +42,13 @@ LOG = logging.getLogger("music-bridge-mixer")
 LOG.setLevel(logging.DEBUG)
 
 parser = argparse.ArgumentParser(description='Neural style transfer with Keras.')
-parser.add_argument('model_path', metavar='model_path', type=str,
-                    help='Path to the trained model')
+parser.add_argument('model_weights_path', metavar='model_weights_path', type=str,
+                    help='Path to the trained model weights')
 parser.add_argument('base_music_path', metavar='base', type=str,
                     help='Path to the music to transform.')
 parser.add_argument('style_reference_music_path', metavar='ref', type=str,
                     help='Path to the style reference music.')
-parser.add_argument('result_prefix', metavar='res_prefix', type=str,
+parser.add_argument('--prefix', type=str, default="mixed",
                     help='Prefix for the saved results.')
 parser.add_argument('--iter', type=int, default=10, required=False,
                     help='Number of iterations to run.')
@@ -59,7 +60,7 @@ parser.add_argument('--tv_weight', type=float, default=1.0, required=False,
                     help='Total Variation weight.')
 
 args = parser.parse_args()
-model_path = args.model_path
+model_weights_path = args.model_path
 base_music_path = args.base_music_path
 style_reference_music_path = args.style_reference_music_path
 result_prefix = args.result_prefix
@@ -73,6 +74,7 @@ content_weight = args.content_weight
 """
 scripts for test
 """
+"""
 model_weights_path = "s3://tagatune/music-bridge-tagger-best-0.9867-0.1156.weights.hdf5"
 base_music_path = "/workspace/music-bridge/data/skyfall.wav"
 style_reference_music_path = "/workspace/music-bridge/data/crazy.wav"
@@ -81,6 +83,7 @@ total_variation_weight = 1.
 style_weight = 1.
 content_weight = 0.025
 iterations = 10
+"""
 
 channels = 1
 music_length = 642185
