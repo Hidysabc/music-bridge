@@ -274,6 +274,6 @@ out_path = os.path.join(input_tmp_dir, fname)
 maxv = np.iinfo(np.int16).max
 librosa.output.write_wav(out_path, (music_arr*maxv).astype(np.int16),
                          sr=22050)
-#s3_client.upload_file(out_path, s3bucket, fname)
+s3_client.upload_file(out_path, s3bucket, fname)
 LOG.info('Mixed music uploaded to s3://{}/{}'.format(s3bucket, fname))
 LOG.info("Done :)")
