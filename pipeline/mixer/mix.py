@@ -183,13 +183,13 @@ def total_variation_loss(x):
 
 # combine these loss functions into a single scalar
 loss = K.variable(0.)
-layer_features = outputs_dict['conv3']
+layer_features = outputs_dict['gru1']
 base_music_features = layer_features[0, :, :]
 combination_features = layer_features[2, :, :]
 loss += content_weight * content_loss(base_music_features,
                                       combination_features)
 
-feature_layers = ['conv1', 'conv2', 'conv3', 'conv4']
+feature_layers = ['conv2', 'conv3', 'conv4', 'gru1']
 for layer_name in feature_layers:
     layer_features = outputs_dict[layer_name]
     style_reference_features = layer_features[1, :, :]
@@ -250,7 +250,7 @@ evaluator = Evaluator()
 # run scipy-based optimization (L-BFGS) over the pixels of the generated image
 # so as to minimize the neural style loss
 #x = np.random.uniform(0, 2, (music_length, 1)) - 1.
-x, sr = read_music(base_music_path).reshape(music_length, 1)
+x = read_music(base_music_path).reshape(music_length, 1)
 
 for i in range(iterations):
     LOG.info('Start of iteration {}'.format(i))
