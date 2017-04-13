@@ -25,7 +25,7 @@ if not os.path.exists(input_tmp_dir):
 batch_size = 2
 spectral_size = 1025
 music_length = 1255
-output_features = 188
+output_features = 28
 epochs = 1000
 
 
@@ -73,6 +73,7 @@ else:
 
 
 meta = pd.read_csv(os.path.join(input_tmp_dir, input_meta_filename))
+meta = meta.loc[:, meta.sum() > 1000]
 meta["filename"] = meta.filename + ".stft.npy"
 train_files = meta.filename[meta.set == "train"]
 valid_files = meta.filename[meta.set == "valid"]
