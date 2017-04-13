@@ -84,10 +84,11 @@ content_weight = 0.025
 iterations = 10
 """
 
-channels = 1
-music_length = 642185
+channels = 2
+spectral_size = 1025
+music_length = 1255
 s3bucket = "tagatune"
-output_features = 188
+output_features = 28
 
 
 input_tmp_dir = "/tmp"
@@ -104,29 +105,36 @@ if model_weights_path.startswith("s3://"):
 else:
     model_weights_local_path = model_weights_path
 
+def flatten_complex(z):
+    return np.array([np.real(z), np.imag(z)]).transpose((1, 2, 0))
+
 def read_music(path):
     arr, sr = librosa.core.load(path, mono=True, sr=22050)
-    if arr.shape[0] < music_length:
-        pad_length = (music_length - arr.shape[0]) / 2
-        arr = np.lib.pad(arr,
-                            (pad_length, music_length - pad_length - arr.shape),
-                            "constant", constant_values=(0, 0))
-    elif arr.shape[0] > music_length:
-        cut_length = (arr.shape[0] - music_length) / 2
-        arr = arr[cut_length:(cut_length + music_length)]
-    return np.expand_dims(np.expand_dims(arr, axis=1), axis=0)
+    z = librosa.core.stft(arr)
+    if z.shape[1] < music_length:
+        pad_length = (music_length - z.shape[1]) / 2
+        _z = np.zeros((spectral_size, music_length))
+        _z[:, pad_length:(music_length - pad_length - z.shape[1])] = z
+        z = _z
+    elif z.shape[1] > music_length:
+        cut_length = (z.shape[1] - music_length) / 2
+        _z = z[:, cut_length:(cut_length + music_length)]
+        z = _z
+    return np.expand_dims(flatten_complex(z), axis=0)
 
 def deprocess_music(x):
-    x = x.reshape((music_length, 1))
-    x = np.clip(x, -1, 1)
-    return x
+    x = x.reshape((spectral_size, music_length, channels))
+    z = np.empty(x.shape[:-1], dtype=complex)
+    z.real = x[:, :, 0]
+    z.imag = x[:, :, 1]
+    return np.clip(librosa.core.istft(z), -1, 1)
 
 # get tensor representations of our images
 base_music = K.variable(read_music(base_music_path))
 style_reference_music = K.variable(read_music(style_reference_music_path))
 
 # this will contain our generated image
-combination_music = K.placeholder((1, music_length, 1))
+combination_music = K.placeholder((1, spectral_size, music_length, channels))
 
 # combine the 3 music into a single Keras tensor
 input_tensor = K.concatenate([base_music,
@@ -146,7 +154,7 @@ outputs_dict = dict([(layer.name, layer.output) for layer in model.layers])
 
 # the gram matrix of an image tensor (feature-wise outer product)
 def gram_matrix(x):
-    assert K.ndim(x) == 2
+    assert K.ndim(x) == 3
     features = K.batch_flatten(x)
     gram = K.dot(features, K.transpose(features))
     return gram
@@ -158,8 +166,8 @@ def gram_matrix(x):
 # and from the generated image
 
 def style_loss(style, combination):
-    assert K.ndim(style) == 2
-    assert K.ndim(combination) == 2
+    assert K.ndim(style) == 3
+    assert K.ndim(combination) == 3
     S = gram_matrix(style)
     C = gram_matrix(combination)
     channels = 1
@@ -178,22 +186,23 @@ def content_loss(base, combination):
 
 def total_variation_loss(x):
     assert K.ndim(x) == 3
-    a = K.square(x[:, :music_length - 1, :] - x[:, 1:, :])
-    return K.sum(K.pow(a, 1.25))
+    a = K.square(x[:, :spectral_size - 1, :music_length - 1, :] - x[:, 1:, :music_length - 1, :])
+    b = K.square(x[:, :spectral_size - 1, :music_length - 1, :] - x[:, :spectral_size - 1, 1:, :])
+    return K.sum(K.pow(a + b, 1.25))
 
 # combine these loss functions into a single scalar
 loss = K.variable(0.)
 layer_features = outputs_dict['gru1']
-base_music_features = layer_features[0, :, :]
-combination_features = layer_features[2, :, :]
+base_music_features = layer_features[0, :, :, :]
+combination_features = layer_features[2, :, :, :]
 loss += content_weight * content_loss(base_music_features,
                                       combination_features)
 
-feature_layers = ['conv2', 'conv3', 'conv4', 'gru1']
+feature_layers = ['conv1', 'conv2', 'conv3', 'conv4', 'gru1']
 for layer_name in feature_layers:
     layer_features = outputs_dict[layer_name]
-    style_reference_features = layer_features[1, :, :]
-    combination_features = layer_features[2, :, :]
+    style_reference_features = layer_features[1, :, :, :]
+    combination_features = layer_features[2, :, :, :]
     sl = style_loss(style_reference_features, combination_features)
     loss += (style_weight / len(feature_layers)) * sl
 
@@ -211,7 +220,7 @@ else:
 f_outputs = K.function([combination_music], outputs)
 
 def eval_loss_and_grads(x):
-    x = x.reshape((1, music_length, 1))
+    x = x.reshape((1, spectral_size, music_length, channels))
     outs = f_outputs([x])
     loss_value = outs[0]
     if len(outs[1:]) == 1:
