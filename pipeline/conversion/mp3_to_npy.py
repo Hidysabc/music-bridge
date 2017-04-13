@@ -24,7 +24,7 @@ NCPU = mp.cpu_count()
 PRJ = "/workspace/music-bridge"
 DATA_PATH = os.path.join(PRJ, "data/tagatune")
 MP3_PATH = os.path.join(DATA_PATH, "mp3")
-OUT_PATH = os.path.join(PRJ, "data/tagatune/npy")
+OUT_PATH = os.path.join(PRJ, "data/tagatune/npy_stft")
 if not os.path.exists(OUT_PATH):
     os.makedirs(OUT_PATH)
 
@@ -42,14 +42,15 @@ annot = pd.read_table(os.path.join(DATA_PATH, "annotations_final.csv"),
 def convert_mp3_to_npy(mp3path, sr=SR, mono=MONO):
     LOG.debug(mp3path)
     key = mp3path.replace(MP3_PATH+"/", "")
-    outfile = os.path.basename(mp3path).replace(".mp3", ".npy")
+    outfile = os.path.basename(mp3path).replace(".mp3", ".stft.npy")
     outpath = os.path.join(OUT_PATH, outfile)
     if key not in annot.index:
         return
     if not os.path.exists(outpath):
         try:
             x, sr = librosa.core.load(mp3path, sr=sr, mono=mono)
-            np.save(outpath, x)
+            D = librosa.stft(x)
+            np.save(outpath, D)
         except:
             return
 

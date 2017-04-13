@@ -23,7 +23,8 @@ if not os.path.exists(input_tmp_dir):
     os.makedirs(input_tmp_dir)
 
 batch_size = 8
-music_length = 642185
+spectral_size = 1025
+music_length = 1255
 output_features = 188
 epochs = 1000
 
@@ -37,6 +38,9 @@ LOG.setLevel(logging.DEBUG)
 s3bucket = "tagatune"
 s3_client = boto3.client("s3")
 
+def flatten_complex(z):
+    return np.array([np.real(z), np.imag(z)]).transpose((1, 2, 0))
+
 def generate_data_from_directory(files, meta, batch_size, input_dir):
     tmp = meta[meta.filename.isin(files)].iloc[:, :-1].copy()
     tmp.set_index("filename", inplace=True)
@@ -45,8 +49,8 @@ def generate_data_from_directory(files, meta, batch_size, input_dir):
         p_files = np.random.permutation(files)
         for i in np.arange(int(len(files)/batch_size+0.5)):
             fs = p_files[i*batch_size:(i+1)*batch_size]
-            Xb = np.array([np.load(os.path.join(input_dir, j)).reshape(1, -1)\
-                .transpose(1, 0) for j in fs])
+            Xb = np.array([flatten_complex(np.load(os.path.join(input_dir, j)))
+                           for j in fs])
             Yb = tmp.loc[fs, :].values
             yield (Xb, Yb)
 
@@ -57,30 +61,38 @@ if len(sys.argv)>1:
     local_model_path = os.path.join(input_tmp_dir,
                                     os.path.basename(model_path))
     s3_client.download_file(s3bucket, sys.argv[1], local_model_path)
-    model = MusicBridgeTagger.build(input_shape=(music_length, 1), include_top=True,
+    model = MusicBridgeTagger.build(input_shape=(spectral_size, music_length, 2),
+                                    include_top=True,
                                     num_outputs=output_features)
     model.load_weights(local_model_path)
 else:
     LOG.info("Start building model...")
-    model = MusicBridgeTagger.build(input_shape=(music_length, 1), include_top=True,
+    model = MusicBridgeTagger.build(input_shape=(spectral_size, music_length, 2),
+                                    include_top=True,
                                     num_outputs=output_features)
 
 
 meta = pd.read_csv(os.path.join(input_tmp_dir, input_meta_filename))
+meta["filename"] = meta.filename + ".stft.npy"
 train_files = meta.filename[meta.set == "train"]
 valid_files = meta.filename[meta.set == "valid"]
 
 import glob
-files = [os.path.basename(f) for f in glob.glob(os.path.join(input_tmp_dir, "npy/*.npy"))]
+files = [os.path.basename(f) for f in glob.glob(os.path.join(input_tmp_dir,
+                                                             "npy_stft/*.npy"))]
 train_files = train_files[train_files.isin(files)]
 valid_files = valid_files[valid_files.isin(files)]
 LOG.info("{} training files".format(train_files.size))
 LOG.info("{} validation files".format(valid_files.size))
 
-train_gen = generate_data_from_directory(train_files, meta, batch_size,
-                                         input_dir = os.path.join(input_tmp_dir, "npy"))
-valid_gen = generate_data_from_directory(valid_files, meta, batch_size,
-                                         input_dir = os.path.join(input_tmp_dir, "npy"))
+train_gen = generate_data_from_directory(
+    train_files, meta, batch_size,
+    input_dir = os.path.join(input_tmp_dir, "npy_stft")
+)
+valid_gen = generate_data_from_directory(
+    valid_files, meta, batch_size,
+    input_dir = os.path.join(input_tmp_dir, "npy_stft")
+)
 
 
 model.compile(loss="binary_crossentropy",
