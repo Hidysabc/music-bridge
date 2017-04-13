@@ -22,7 +22,7 @@ input_tmp_dir = '/tmp/data'
 if not os.path.exists(input_tmp_dir):
     os.makedirs(input_tmp_dir)
 
-batch_size = 8
+batch_size = 2
 spectral_size = 1025
 music_length = 1255
 output_features = 188
