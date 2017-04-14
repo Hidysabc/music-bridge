@@ -2,7 +2,7 @@
 
 PRJ=/music-bridge
 DATA=/tmp/data
-DOCKERRUN="docker run -it --rm -v /tmp:/tmp -v /home/ubuntu/.aws:/root/.aws music-bridge-mix python"
+DOCKERRUN="nvidia-docker run -it --rm -v /tmp:/tmp -v /home/ubuntu/.aws:/root/.aws music-bridge-mix python"
 MODEL_PATH="s3://tagatune/music-bridge-tagger-best.weights.hdf5"
 
 # crazy skyfall
