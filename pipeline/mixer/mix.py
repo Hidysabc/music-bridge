@@ -55,7 +55,7 @@ parser.add_argument('--content_weight', type=float, default=0.025, required=Fals
                     help='Content weight.')
 parser.add_argument('--style_weight', type=float, default=1.0, required=False,
                     help='Style weight.')
-parser.add_argument('--tv_weight', type=float, default=1.0, required=False,
+parser.add_argument('--tv_weight', type=float, default=1e-5, required=False,
                     help='Total Variation weight.')
 
 args = parser.parse_args()
@@ -171,7 +171,7 @@ def style_loss(style, combination):
     S = gram_matrix(style)
     C = gram_matrix(combination)
     channels = 1
-    size = music_length
+    size = music_length * spectral_size
     return K.sum(K.square(S - C)) / (4. * (channels ** 2) * (size ** 2))
 
 # an auxiliary loss function
