@@ -193,12 +193,12 @@ def total_variation_loss(x):
 # combine these loss functions into a single scalar
 loss = K.variable(0.)
 layer_features = outputs_dict['gru1']
-base_music_features = layer_features[0, :, :, :]
-combination_features = layer_features[2, :, :, :]
+base_music_features = layer_features[0, :, :]
+combination_features = layer_features[2, :, :]
 loss += content_weight * content_loss(base_music_features,
                                       combination_features)
 
-feature_layers = ['conv1', 'conv2', 'conv3', 'conv4', 'gru1']
+feature_layers = ['conv1', 'conv2', 'conv3', 'conv4']
 for layer_name in feature_layers:
     layer_features = outputs_dict[layer_name]
     style_reference_features = layer_features[1, :, :, :]
