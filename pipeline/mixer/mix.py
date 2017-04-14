@@ -185,7 +185,7 @@ def content_loss(base, combination):
 # designed to keep the generated image locally coherent
 
 def total_variation_loss(x):
-    assert K.ndim(x) == 3
+    assert K.ndim(x) == 4
     a = K.square(x[:, :spectral_size - 1, :music_length - 1, :] - x[:, 1:, :music_length - 1, :])
     b = K.square(x[:, :spectral_size - 1, :music_length - 1, :] - x[:, :spectral_size - 1, 1:, :])
     return K.sum(K.pow(a + b, 1.25))
