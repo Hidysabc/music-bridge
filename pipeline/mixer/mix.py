@@ -260,14 +260,14 @@ evaluator = Evaluator()
 # so as to minimize the neural style loss
 #x = np.random.uniform(0, 2, (1, spectral_size, music_length, channels)) - 1.
 x = read_music(base_music_path).reshape(1, spectral_size, music_length, channels)
-
+report = 10
 for i in range(iterations):
     LOG.info('Start of iteration {}'.format(i))
     x, min_val, info = fmin_l_bfgs_b(evaluator.loss, x.flatten(),
                                      fprime=evaluator.grads, maxfun=20)
     LOG.info('Current loss value: {}'.format(min_val))
     # save current generated image
-    if i % 100 == 99:
+    if i % report == (report-1):
         music_arr = deprocess_music(x.copy())
         fname = result_prefix + '_at_iteration_%d.wav' % (i+1)
         out_path = os.path.join(input_tmp_dir, fname)
