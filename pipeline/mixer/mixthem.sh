@@ -14,14 +14,14 @@ $DOCKERRUN $PRJ/pipeline/mixer/mix.py $MODEL_PATH \
 # 1.01 million reasons
 
 $DOCKERRUN $PRJ/pipeline/mixer/mix.py $MODEL_PATH \
-    $DATA/million_reasons.wav $DATA/ten_thousand_reasons.wav \
-    --prefix one_point_o_one_million_reasons $PARAMS
+    $DATA/million_reasons.wav $DATA/10000reasons.wav \
+    --prefix one_o_one_million_reasons $PARAMS
 
 # Mary did you know we are never ever getting back together
 
 $DOCKERRUN $PRJ/pipeline/mixer/mix.py $MODEL_PATH \
     $DATA/mary_did_you_know.wav $DATA/we_are_never_ever_getting_back_together.wav \
-    --prefix one_o_one_million_reasons $PARAMS
+    --prefix mary_did_you_know_never_ever $PARAMS
 
 # Still single ladies
 
