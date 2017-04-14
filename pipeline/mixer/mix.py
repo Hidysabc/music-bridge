@@ -258,8 +258,8 @@ evaluator = Evaluator()
 
 # run scipy-based optimization (L-BFGS) over the pixels of the generated image
 # so as to minimize the neural style loss
-#x = np.random.uniform(0, 2, (music_length, 1)) - 1.
-x = read_music(base_music_path).reshape(music_length, 1)
+#x = np.random.uniform(0, 2, (1, spectral_size, music_length, channels)) - 1.
+x = read_music(base_music_path).reshape(1, spectral_size, music_length, channels)
 
 for i in range(iterations):
     LOG.info('Start of iteration {}'.format(i))
